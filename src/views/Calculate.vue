@@ -1,16 +1,16 @@
 <template>
   <div class="calculate-page">
 
-                <!-- 金飾 -->
-                <div class="section">
+            <!-- 金飾 -->
+            <div class="section">
                 <h2 class="colculate-title">飾金計算</h2>
                 <h3 class="public-price-title">當日公告回收價</h3>
                 <div class="public-price">
                     <div class="unit-box penny">
-                        錢 : {{ pennyPrice }}
+                        錢 : {{ goldPennyPrice }}
                     </div>
                     <div class="unit-box gram">
-                        克 : {{ gramPrice }}
+                        克 : {{ goldGramPrice }}
                     </div>
                 </div>
                 <div class="cal-section">
@@ -32,7 +32,7 @@
                             >
                             <button
                                 class="sumbit-btn"
-                                @click="calPrice"
+                                @click="calPriceGold"
                             >
                             計算
                             </button>
@@ -56,31 +56,37 @@
 
             <!-- 金條 -->
             <div class="section">
-                <h2 class="colculate-title">飾條計算</h2>
+                <h2 class="colculate-title">黃金條塊計算</h2>
                 <h3 class="public-price-title">當日公告回收價</h3>
                 <div class="public-price">
                     <div class="unit-box penny">
-                        錢 : {{ pennyPrice }}
+                        錢 : {{ bullionPennyPrice }}
                     </div>
                     <div class="unit-box gram">
-                        克 : {{ gramPrice }}
+                        克 : {{ bullionGramPrice }}
                     </div>
                 </div>
                 <div class="cal-section">
                     <!-- left -->
                     <div class="cal-left">
                         <div>
-                            <select>
-                                <option>單位選擇</option>
-                                <option>錢</option>
-                                <option>克</option>
+                            單位
+                            <select v-model="bullionUint">
+                                <option value="penny">錢</option>
+                                <option value="gram">克</option>
                             </select>
                         </div>
                         <div class="input-section">
-                            <input class="input-style" type="number" placeholder="輸入重量">
+                            <!-- 條塊重量 -->
+                            <input 
+                                class="input-style" 
+                                type="number" 
+                                placeholder="輸入重量"
+                                v-model="billionWeight"
+                            >
                             <button
                                 class="sumbit-btn"
-                                @click="calPrice"
+                                @click="calPriceBullion"
                             >
                             計算
                         </button>
@@ -114,46 +120,77 @@ export default {
   name: 'calculatePage',
   data () {
     return{
-      usdtRate:0,
-      pennyPrice:0, //一錢
+      usdtRate:0, //usdt匯率 from Api
+      bullionPennyPrice:0, //一錢價格 by 金條 from Api
 
+
+    //  金飾
       goldCalPrice: 0, //計算金飾
       goldUint:'penny', //飾金單位
       goldWeight:0, //金飾重量
-    //   gold_calculatedUsdt:0,
-// /// ///
-      bullionUint:'', //金條單位
-      bullionCalPrice: 0, //計算金條
+      goldCalculatedUsdt:0,
+//
+    //  金條 
+      bullionCalPrice: 0, //計算金條價格
+      bullionUint:'penny', //金條單位
+      billionWeight:0,
       bullionCalculatedUsdt:0,
     }
   },
   
   computed:{
-        // 一克價格 
-        gramPrice: function(){
-            return (this.pennyPrice/ 3.72).toFixed(3)
+        // 一克價格(金條)
+        bullionGramPrice: function(){
+            return (this.bullionPennyPrice/ 3.75).toFixed(2)
         },
 
         gold_calculatedUsdt: function(){
-            return (this.goldCalPrice/this.usdtRate).toFixed(3)
+            return (this.goldCalPrice/this.usdtRate).toFixed(2)
+        },
+
+        // 一錢價格(金飾)
+        goldPennyPrice: function(){
+           return (this.bullionPennyPrice-200)* 0.95;
+        },
+        // 一克價格(金飾)
+        goldGramPrice: function(){
+            return (this.goldPennyPrice/ 3.75).toFixed(2);
         }
     },
 
     methods:{
-        calPrice: function(){
+        // 條塊計算
+        calPriceBullion: function(){
 
-            console.log('單位', this.goldUint);
-            console.log('重量', this.goldWeight);
+            let priceBase = this.bullionUint == 'penny'? this.bullionPennyPrice:this.bullionGramPrice;
+            // 計算結果
 
-            let priceBase = this.goldUint == 'penny'? this.pennyPrice:this.gramPrice;
-            console.log('價格', priceBase);
+            // 總價
+            let calculatedResult = this.billionWeight * priceBase;
+            this.bullionCalPrice = calculatedResult
 
-            // let calculatedResult = this.goldWeight * priceBase;
-            this.goldCalPrice = this.goldWeight * priceBase;
+            // usdt
+            this.bullionCalculatedUsdt = (calculatedResult/ this.usdtRate).toFixed(2)
 
-            alert("OK")
-
+            alert("試算完成")
         },
+
+        // 金飾計算
+        calPriceGold: function(){
+
+
+            let priceBase = this.goldUint == 'penny'? this.goldPennyPrice:this.goldGramPrice;
+            // 計算結果
+
+            // 總價
+            let calculatedResult = this.goldWeight * priceBase;
+            this.goldCalPrice = calculatedResult
+
+            // usdt
+            this.goldCalculatedUsdt = (calculatedResult/ this.usdtRate).toFixed(2)
+
+            alert("試算完成")
+            },
 
         // 取得USDT匯率
         getUsdtRate: function(){
@@ -172,7 +209,7 @@ export default {
             let golaAip = "http://13.212.61.53:3000/api/price/goldprice"
 
             axios.get(golaAip)
-            .then( (response) => this.pennyPrice = response.data.goldprice[0].goldprice)
+            .then( (response) => this.bullionPennyPrice = response.data.goldprice[0].goldprice)
             .catch( (error) => console.log(error))
         },
 
